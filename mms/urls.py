@@ -2,9 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from mms_api.apiviews import (ContainerAPI,
-
-                              )
+from mms_api.apiviews import (VendorAPI,UploadVendorsAsExcel,PaymentAPI,PaymentCycleAPI,PaymentMethodAPI)
 from core.serializers import CustomUserSerializer
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
@@ -41,8 +39,13 @@ urlpatterns = [
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     # mms api
+    # all vendors
+    path('vendors/', VendorAPI.as_view(), name="all vendors"),
+    path('payment_cycles/', PaymentCycleAPI.as_view(), name="all cycles"),
+    path('payment_methods/', PaymentMethodAPI.as_view(), name="all methods"),
+    path('payments/', PaymentAPI.as_view(), name="all Payments"),
+    path('upload_vendors_as_excel/', UploadVendorsAsExcel.as_view(), name="all vendors"),
 
-    # path('deposits/', DepositAPI.as_view(), name="deposits"),
     # path('create_deposit/', DepositCreateAPI.as_view(), name="create deposit"),
     # path('withdraws/', WithdrawAPI.as_view(), name="withdraw"),
     # path('withdraws_report/', WithdrawsReportAPI.as_view(), name="withdraws report"),
@@ -61,7 +64,6 @@ urlpatterns = [
     # path('create_invoice/', InvoiceAPI.as_view(), name="create invoice"),
     # path('invoices/', InvoiceAPI.as_view(), name="get all invoices"),
     # containers
-    path('containers/', ContainerAPI.as_view(), name="ContainerAPI"),
     # path('container_deposits/<uuid:pk>', ContainerDepositAPI.as_view(), name="container deposits"),
     # path('container_withdraws/<uuid:pk>', ContainerWithdrawsAPI.as_view(), name="container withdraws"),
     # # company

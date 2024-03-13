@@ -12,26 +12,30 @@ class PaymentCycle(models.Model):
 
     def __str__(self):
         return self.title
+
+
 class PaymentMethod(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
 
-
     def __str__(self):
         return self.title
+
 
 class Vendor(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     vendor_id = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
-    payment_cycle = models.ForeignKey(PaymentCycle,on_delete=models.CASCADE)
-    payment_method = models.ForeignKey(PaymentMethod,on_delete=models.CASCADE)
-    number = models.IntegerField(max_length=255,blank=True)
+    pay_period = models.ForeignKey(PaymentCycle, on_delete=models.CASCADE)
+    pay_type = models.ForeignKey(PaymentMethod, on_delete=models.CASCADE)
+    number = models.CharField(max_length=255,blank=True)
+    owner_name = models.CharField(max_length=255)
+    owner_phone = models.CharField(max_length=255)
     fully_refunded = models.BooleanField()
     penalized = models.BooleanField()
     created_at = models.DateTimeField(auto_now=True)
     account_manager = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='account_manager')
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account_manager')
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
@@ -45,8 +49,8 @@ class Payment(models.Model):
     vendor_name = models.CharField(max_length=255)
     date_from = models.DateTimeField()
     date_to = models.DateTimeField()
-    payment_cycle = models.ForeignKey(PaymentCycle,on_delete=models.CASCADE)
-    payment_method = models.ForeignKey(PaymentMethod,on_delete=models.CASCADE)
+    payment_cycle = models.ForeignKey(PaymentCycle, on_delete=models.CASCADE)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.CASCADE)
     number = models.IntegerField(blank=True)
     amount = models.FloatField(max_length=255)
     created_at = models.DateTimeField(auto_now=True)
@@ -69,7 +73,6 @@ class PaidOrders(models.Model):
 
     def __str__(self):
         return self.payment_id
-
 
 # class CompanyType(models.Model):
 #     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

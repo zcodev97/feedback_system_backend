@@ -5,31 +5,86 @@ from rest_framework.response import Response
 from rest_framework import generics, status
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .models import (Vendor)
-from .serializers import (VendorSerializer)
+from .models import (Vendor, Payment, PaymentCycle, PaymentMethod)
+from .serializers import (VendorSerializer, PaymentSerializer, PaymentCycleSerializer, PaymentMethodSerializer)
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
+from core.models import User
 
 import datetime
 import pandas as pd
 import pandas_gbq
 
 
-class ContainerAPI(generics.ListCreateAPIView):
-  #   # Execute SQL query and load data into DataFrame
-  #   df = pandas_gbq.read_gbq("""
-  #   SELECT o.id ,o.totalValue , o.subTotal,o.created_at, v.arName
-  # FROM `peak-brook-355811.food_prod_public.orders` o inner  join  `peak-brook-355811.food_prod_public.vendors`  v on
-  # o.vendorID = v.id
-  #  LIMIT 10
-  #   """,
-  #                            project_id='peak-brook-355811')
-  #   print(df)
+class PaymentMethodAPI(generics.ListCreateAPIView):
+    queryset = PaymentMethod.objects.all()
+    serializer_class = PaymentMethodSerializer
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
+
+class PaymentCycleAPI(generics.ListCreateAPIView):
+    queryset = PaymentCycle.objects.all()
+    serializer_class = PaymentCycleSerializer
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
+
+class VendorAPI(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorSerializer
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
 
+
+class PaymentAPI(generics.ListCreateAPIView):
+
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
+
+class UploadVendorsAsExcel(generics.ListCreateAPIView):
+    queryset = Vendor.objects.all()
+    serializer_class = VendorSerializer
+
+    def create(self, request, *args, **kwargs):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            df = pd.read_excel(file)
+            for index, row in df.iterrows():
+
+                account_manager = row['account_manager']
+                pay_type = row['pay_type']
+                pay_period = row['pay_period']
+
+                #               get account manager id
+                account_manager_id = User.objects.get(username=account_manager).id
+                pay_type_id = PaymentMethod.objects.get(title=pay_type).id
+                pay_period_id = PaymentCycle.objects.get(title=pay_period).id
+
+                if Vendor.objects.filter(vendor_id=row['vendor_id']).exists():
+                    continue
+
+                vendors = Vendor.objects.create(
+                    vendor_id=row['vendor_id'],
+                    name=row['name'],
+                    account_manager_id=account_manager_id,
+                    pay_period_id=pay_period_id,
+                    pay_type_id=pay_type_id,
+                    number=row['number'],
+                    fully_refunded=False,
+                    penalized=False,
+                    owner_name=row['owner_name'],
+                    owner_phone=row['owner_phone'],
+                    created_by=request.user,
+                )
+                vendors.save()
+
+            return Response({'message': 'File Uploaded Successfully'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # class CompaniesListAPI(generics.ListAPIView):
 #     queryset = Company.objects.all()
