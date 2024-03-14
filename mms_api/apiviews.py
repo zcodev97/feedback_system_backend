@@ -1,20 +1,24 @@
 from django.db.models import Sum
+from django.forms import model_to_dict
 from django.utils.dateparse import parse_date
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import generics, status
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .models import (Vendor, Payment, PaymentCycle, PaymentMethod)
-from .serializers import (VendorSerializer, PaymentSerializer, PaymentCycleSerializer, PaymentMethodSerializer)
+from .models import (Vendor, Payment, PaymentCycle, PaymentMethod, PaidOrders)
+from .serializers import (VendorSerializer, PaymentSerializer, PaymentCycleSerializer,
+                          PaidOrdersSerializer,
+                          PaymentMethodSerializer)
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from core.models import User
-
+from django.utils.html import format_html
 import datetime
 import pandas as pd
 import pandas_gbq
+import numpy as np
 
 
 class PaymentMethodAPI(generics.ListCreateAPIView):
@@ -36,7 +40,6 @@ class VendorAPI(generics.ListCreateAPIView):
 
 
 class PaymentAPI(generics.ListCreateAPIView):
-
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
@@ -86,210 +89,58 @@ class UploadVendorsAsExcel(generics.ListCreateAPIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# class CompaniesListAPI(generics.ListAPIView):
-#     queryset = Company.objects.all()
-#     serializer_class = CompanySerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class CompanyCreateAPI(generics.CreateAPIView):
-#     queryset = Company.objects.all()
-#     serializer_class = CompanyCreateSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class DepositAPI(generics.ListCreateAPIView):
-#     queryset = Deposit.objects.all()
-#     serializer_class = DepositSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class DepositCreateAPI(generics.CreateAPIView):
-#     queryset = Deposit.objects.all()
-#     serializer_class = DepositCreateSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class WithdrawAPI(generics.ListCreateAPIView):
-#     queryset = Withdraw.objects.all()
-#     serializer_class = WithdrawSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class WithdrawTypeAPI(generics.ListCreateAPIView):
-#     queryset = WithdrawType.objects.all()
-#     serializer_class = WithdrawTypeSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class CreateWithdrawTypeAPI(generics.CreateAPIView):
-#     queryset = WithdrawType.objects.all()
-#     serializer_class = WithdrawTypeSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class WithdrawCreateAPI(generics.CreateAPIView):
-#     queryset = Withdraw.objects.all()
-#     serializer_class = WithdrawCreateSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#
-# class WithdrawsReportAPI(generics.ListCreateAPIView):
-#     serializer_class = WithdrawSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         queryset = Withdraw.objects.all()
-#         date_from = self.request.query_params.get('date_from')
-#         date_to = self.request.query_params.get('date_to')
-#         if date_from and date_to:
-#             date_from = parse_date(date_from)
-#             date_to = parse_date(date_to)
-#             if date_from and date_to:
-#                 queryset = queryset.filter(
-#                     created_at__range=[date_from, date_to])
-#
-#         return queryset
-#
-#
-# class DepositsReportAPI(generics.ListCreateAPIView):
-#     serializer_class = DepositSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         queryset = Deposit.objects.all()
-#         date_from = self.request.query_params.get('date_from')
-#         date_to = self.request.query_params.get('date_to')
-#         if date_from and date_to:
-#             date_from = parse_date(date_from)
-#             date_to = parse_date(date_to)
-#             if date_from and date_to:
-#                 queryset = queryset.filter(
-#                     created_at__range=[date_from, date_to])
-#
-#         return queryset
-#
-#
-# class ContainerDepositAPI(generics.ListCreateAPIView):
-#     serializer_class = DepositSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         # Assuming you get the container_id from the request's query parameters
-#
-#         container_id = self.kwargs['pk']
-#         if container_id:
-#             # If container_id is provided, filter deposits for that specific container
-#             queryset = Deposit.objects.filter(container__id=container_id)
-#         else:
-#             # If no container_id is provided, return all deposits
-#             queryset = Deposit.objects.all()
-#
-#         return queryset
-#
-#
-# class ContainerWithdrawsAPI(generics.ListCreateAPIView):
-#     serializer_class = WithdrawSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         # Assuming you get the container_id from the request's query parameters
-#         container_id = self.kwargs['pk']
-#
-#         if container_id:
-#             # If container_id is provided, filter deposits for that specific container
-#             queryset = Withdraw.objects.filter(container__id=container_id)
-#
-#         else:
-#             # If no container_id is provided, return all deposits
-#             queryset = Withdraw.objects.all()
-#
-#         return queryset
-#
-#
-# class CompanyDepositAPI(generics.ListCreateAPIView):
-#     serializer_class = DepositSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         company_name_id = self.kwargs['pk']
-#
-#         if company_name_id:
-#             # If container_id is provided, filter deposits for that specific container
-#             queryset = Deposit.objects.filter(company_name_id=company_name_id)
-#         else:
-#             # If no container_id is provided, return all deposits
-#             queryset = Deposit.objects.all()
-#         return queryset
-#
-#
-# class CompanyWithdrawsAPI(generics.ListCreateAPIView):
-#     serializer_class = WithdrawSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         # Assuming you get the container_id from the request's query parameters
-#         company_name_id = self.kwargs['pk']
-#
-#         if company_name_id:
-#             # If container_id is provided, filter deposits for that specific container
-#             queryset = Withdraw.objects.filter(company_name_id=company_name_id)
-#         else:
-#             # If no container_id is provided, return all deposits
-#             queryset = Withdraw.objects.all()
-#
-#         return queryset
-#
-#
-# class CompanySupervisorAPI(generics.ListCreateAPIView):
-#     serializer_class = CompanySerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         # Assuming you get the container_id from the request's query parameters
-#         supervisor = self.kwargs['pk']
-#
-#         if supervisor:
-#             # If container_id is provided, filter deposits for that specific container
-#             queryset = Company.objects.filter(supervisor=supervisor)
-#         else:
-#             # If no container_id is provided, return all deposits
-#             queryset = Company.objects.all()
-#
-#         return queryset
-#
-#
-# class SupervisorWithdrawsAPI(generics.ListCreateAPIView):
-#     serializer_class = WithdrawSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         # Assuming you get the container_id from the request's query parameters
-#         supervisor_id = self.kwargs['pk']
-#
-#         if supervisor_id:
-#             # If container_id is provided, filter deposits for that specific container
-#             queryset = Withdraw.objects.filter(supervisor_id=supervisor_id)
-#         else:
-#             # If no container_id is provided, return all deposits
-#             queryset = Withdraw.objects.all()
-#
-#         return queryset
-#
-#
-# class SupervisorDepositsAPI(generics.ListCreateAPIView):
-#     serializer_class = DepositSerializer
-#     permission_classes = [IsAuthenticated, DjangoModelPermissions]
-#
-#     def get_queryset(self):
-#         # Assuming you get the container_id from the request's query parameters
-#         supervisor_id = self.kwargs['pk']
-#
-#         if supervisor_id:
-#             # If container_id is provided, filter deposits for that specific container
-#             queryset = Deposit.objects.filter(supervisor_id=supervisor_id)
-#         else:
-#             # If no container_id is provided, return all deposits
-#             queryset = Deposit.objects.all()
-#
-#         return queryset
+
+class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
+    queryset = Vendor.objects.all()
+    serializer_class = VendorSerializer
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
+    def list(self, request, *args, **kwargs):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        query = f"""
+           SELECT * FROM `peak-brook-355811.food_prod_public.vendor_payment` 
+           WHERE order_date BETWEEN '{start_date}' AND '{end_date}'
+           LIMIT 1000
+        """
+        df = pandas_gbq.read_gbq(query, project_id='peak-brook-355811')
+
+        # Replace NaN (null in DataFrame) with None for JSON serialization
+        # df = df.where(pd.notnull(df), None)
+
+        # Replace NaN (null in DataFrame) with None for direct JSON serialization
+        df = df.replace({np.nan: None})
+
+        # Convert the DataFrame to a list of dicts, which is JSON serializable
+        data = df.to_dict(orient='records')
+
+        # Group and sum the `to_be_paid` column by vendor
+        grouped_sum = df.groupby('vendor', as_index=False)['to_be_paid'].sum()
+
+        # Fetch additional vendor details from the Django model
+        vendors = Vendor.objects.prefetch_related('pay_period', 'pay_type').in_bulk(field_name='id')
+        vendor_details = {
+            vendor.name: {
+                'number': vendor.number,
+                'penalized': vendor.penalized,
+                'fully_refunded': vendor.fully_refunded,
+                'pay_period': PaymentCycleSerializer(vendor.pay_period).data.get('title', ''),
+                'pay_type': PaymentMethodSerializer(vendor.pay_type).data.get('title', ''),
+            } for vendor in vendors.values()
+        }
+
+        # Prepare the final results, adding start_date and end_date for each vendor
+        final_results = []
+        for item in grouped_sum.itertuples(index=False):
+            vendor_info = vendor_details.get(item.vendor, {})
+            # Update each item with additional vendor details and include start_date and end_date
+            result_item = {
+                **item._asdict(),
+                **vendor_info,
+                'start_date': start_date,
+                'end_date': end_date,
+            }
+            final_results.append(result_item)
+
+        return Response([final_results,data])

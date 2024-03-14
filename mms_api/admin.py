@@ -85,36 +85,9 @@ class PaidOrdersAdmin(admin.ModelAdmin):
     list_per_page = 25  # Items per page
     ordering = ('-created_at',)  # Default ordering
     search_fields = ['payment_id']  # Fields to search by
-    list_display = ['payment_id', 'order_id','formatted_price_dinar','paid','created_at','created_by']
+    list_display = [field.name for field in PaidOrders._meta.get_fields() if field.name != 'id']
 
 
     def formatted_price_dinar(self, obj):
         return format_html(f"IQD {obj.amount:,.0f}")
     formatted_price_dinar.short_description = 'Amount'  # Sets the column header
-
-
-    def save_model(self, request, obj, form, change):
-        # Execute SQL query and load data into DataFrame
-        df = pandas_gbq.read_gbq("""
-          SELECT o.id, o.totalValue, o.subTotal, o.created_at, v.arName
-          FROM `peak-brook-355811.food_prod_public.orders` o 
-          INNER JOIN `peak-brook-355811.food_prod_public.vendors` v 
-          ON o.vendorID = v.id
-           where o.created_at between '2024-01-01' and '2024-01-15'  
-          LIMIT 1000
-          """,
-          project_id='peak-brook-355811')
-
-        # Iterate over the DataFrame rows and create PaidOrders instances
-        for _, row in df.iterrows():
-            print(row)
-            PaidOrders.objects.create(
-                payment_id=row['id'],
-                order_id=row['id'],
-                amount=row['totalValue'],
-                paid=True,  # Assuming all orders in this query are paid
-                created_at=row['created_at'],
-                created_by=request.user
-            )
-
-        super().save_model(request, obj, form, change)

@@ -2,7 +2,9 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from mms_api.apiviews import (VendorAPI,UploadVendorsAsExcel,PaymentAPI,PaymentCycleAPI,PaymentMethodAPI)
+from mms_api.apiviews import (VendorAPI, UploadVendorsAsExcel, PaymentAPI, PaymentCycleAPI, PaymentMethodAPI
+, VendorPaymentsSummaryAPI
+                              )
 from core.serializers import CustomUserSerializer
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
@@ -26,6 +28,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
 # Admin Site Config
 admin.sites.AdminSite.site_header = 'حساباتي'
 admin.sites.AdminSite.site_title = 'حساباتي'
@@ -35,7 +39,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # YOUR PATTERNS
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-  # Optional UI:
+    # Optional UI:
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     # mms api
@@ -45,6 +49,8 @@ urlpatterns = [
     path('payment_methods/', PaymentMethodAPI.as_view(), name="all methods"),
     path('payments/', PaymentAPI.as_view(), name="all Payments"),
     path('upload_vendors_as_excel/', UploadVendorsAsExcel.as_view(), name="all vendors"),
+    # payment summary
+    path('vendor-payments-summary/', VendorPaymentsSummaryAPI.as_view(), name='vendor-payments-summary'),
 
     # path('create_deposit/', DepositCreateAPI.as_view(), name="create deposit"),
     # path('withdraws/', WithdrawAPI.as_view(), name="withdraw"),

@@ -28,7 +28,7 @@ class Vendor(models.Model):
     name = models.CharField(max_length=255)
     pay_period = models.ForeignKey(PaymentCycle, on_delete=models.CASCADE)
     pay_type = models.ForeignKey(PaymentMethod, on_delete=models.CASCADE)
-    number = models.CharField(max_length=255,blank=True)
+    number = models.CharField(max_length=255, blank=True)
     owner_name = models.CharField(max_length=255)
     owner_phone = models.CharField(max_length=255)
     fully_refunded = models.BooleanField()
@@ -63,17 +63,42 @@ class Payment(models.Model):
 
 class PaidOrders(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    payment_id = models.CharField(max_length=255, unique=True)
+    payment_id = models.CharField(max_length=10, unique=True, editable=False)
     order_id = models.CharField(max_length=255, unique=True)
-    amount = models.FloatField(max_length=255)
-    paid = models.BooleanField()
+    order_date = models.DateTimeField()
+    vendor = models.CharField(max_length=255)
+    vendor_id = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="vendor_db_id")
+    sub_total = models.FloatField()
+    vendor_discount_cap = models.FloatField()
+    vendor_discount = models.FloatField()
+    total_discount = models.FloatField()
+    commission_percentage = models.FloatField()
+    commission_value = models.FloatField()
+    refund = models.FloatField()
+    hybrid_payment = models.FloatField()
+    to_be_paid = models.FloatField()
+    cancellation_type = models.CharField(max_length=255)
+    cancellation_reason = models.CharField(max_length=255)
+    lastStatus = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    def generate_payment_id(self):
+        # Customize the prefix or length as needed
+        prefix = "INV"
+        unique_id = str(uuid.uuid4().int)[:8]  # Extract 6 characters from the UUID
+        return f"{prefix}-{unique_id}"
+
     def __str__(self):
         return self.payment_id
 
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if not self.payment_id:
+                # Generate a short and secure invoice ID
+                self.payment_id = self.generate_payment_id()
+            super().save(*args, **kwargs)
 # class CompanyType(models.Model):
 #     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 #     title = models.CharField(max_length=255, unique=True)
