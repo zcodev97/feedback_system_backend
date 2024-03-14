@@ -106,35 +106,37 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
         """
         df = pandas_gbq.read_gbq(query, project_id='peak-brook-355811')
 
-        # Replace NaN (null in DataFrame) with None for JSON serialization
-        # df = df.where(pd.notnull(df), None)
-
         # Replace NaN (null in DataFrame) with None for direct JSON serialization
-        df = df.replace({np.nan: None})
+        df.replace({np.nan: None}, inplace=True)
 
-        # Convert the DataFrame to a list of dicts, which is JSON serializable
-        data = df.to_dict(orient='records')
+        # Calculate the count of orders for each vendor and aggregate order details
+        df['order_details'] = df.apply(lambda row: row.to_dict(), axis=1)
+        orders_by_vendor = df.groupby('vendor')['order_details'].apply(list).reset_index(name='orders')
+        order_counts = df.groupby('vendor')['order_id'].count().reset_index(name='order_count')
 
         # Group and sum the `to_be_paid` column by vendor
         grouped_sum = df.groupby('vendor', as_index=False)['to_be_paid'].sum()
 
+        # Merge the sum DataFrame with the order counts DataFrame
+        grouped_sum = pd.merge(grouped_sum, order_counts, on='vendor')
+
+        # Merge with the orders data
+        grouped_sum = pd.merge(grouped_sum, orders_by_vendor, on='vendor')
+
         # Fetch additional vendor details from the Django model
         vendors = Vendor.objects.prefetch_related('pay_period', 'pay_type').in_bulk(field_name='id')
-        vendor_details = {
-            vendor.name: {
-                'number': vendor.number,
-                'penalized': vendor.penalized,
-                'fully_refunded': vendor.fully_refunded,
-                'pay_period': PaymentCycleSerializer(vendor.pay_period).data.get('title', ''),
-                'pay_type': PaymentMethodSerializer(vendor.pay_type).data.get('title', ''),
-            } for vendor in vendors.values()
-        }
+        vendor_details = {vendor.name: {
+            'number': vendor.number,
+            'penalized': vendor.penalized,
+            'fully_refunded': vendor.fully_refunded,
+            'pay_period': PaymentCycleSerializer(vendor.pay_period).data.get('title', ''),
+            'pay_type': PaymentMethodSerializer(vendor.pay_type).data.get('title', ''),
+        } for vendor in vendors.values()}
 
-        # Prepare the final results, adding start_date and end_date for each vendor
+        # Prepare the final results, adding start_date, end_date, order count, and orders for each vendor
         final_results = []
         for item in grouped_sum.itertuples(index=False):
             vendor_info = vendor_details.get(item.vendor, {})
-            # Update each item with additional vendor details and include start_date and end_date
             result_item = {
                 **item._asdict(),
                 **vendor_info,
@@ -143,4 +145,4 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
             }
             final_results.append(result_item)
 
-        return Response([final_results,data])
+        return Response({"vendor_summary": final_results})
