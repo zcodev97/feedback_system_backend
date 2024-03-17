@@ -53,6 +53,8 @@ class Payment(models.Model):
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.CASCADE)
     number = models.IntegerField(blank=True)
     amount = models.FloatField(max_length=255)
+    is_paid = models.BooleanField()
+    orders = models.JSONField()
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

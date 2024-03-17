@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from mms_api.apiviews import (VendorAPI, UploadVendorsAsExcel, PaymentAPI, PaymentCycleAPI, PaymentMethodAPI
+from mms_api.apiviews import (VendorAPI, UploadVendorsAsExcel,CreatePaymentAPI,
+                              PaymentAPI, PaymentCycleAPI, PaymentMethodAPI
 , VendorPaymentsSummaryAPI
                               )
 from core.serializers import CustomUserSerializer
@@ -48,6 +49,8 @@ urlpatterns = [
     path('payment_cycles/', PaymentCycleAPI.as_view(), name="all cycles"),
     path('payment_methods/', PaymentMethodAPI.as_view(), name="all methods"),
     path('payments/', PaymentAPI.as_view(), name="all Payments"),
+    path('create_payment/', CreatePaymentAPI.as_view(), name="create new Payments"),
+
     path('upload_vendors_as_excel/', UploadVendorsAsExcel.as_view(), name="all vendors"),
     # payment summary
     path('vendor-payments-summary/', VendorPaymentsSummaryAPI.as_view(), name='vendor-payments-summary'),

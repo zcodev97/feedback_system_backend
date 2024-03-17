@@ -7,7 +7,8 @@ from rest_framework import generics, status
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from .models import (Vendor, Payment, PaymentCycle, PaymentMethod, PaidOrders)
-from .serializers import (VendorSerializer, PaymentSerializer, PaymentCycleSerializer,
+from .serializers import (VendorSerializer, PaymentSerializer, PaymentCycleSerializer
+                            ,CreatePaymentSerializer,
                           PaidOrdersSerializer,
                           PaymentMethodSerializer)
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
@@ -19,6 +20,7 @@ import datetime
 import pandas as pd
 import pandas_gbq
 import numpy as np
+from django.db.models import Q
 
 
 class PaymentMethodAPI(generics.ListCreateAPIView):
@@ -44,6 +46,11 @@ class PaymentAPI(generics.ListCreateAPIView):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
 
+
+class CreatePaymentAPI(generics.ListCreateAPIView):
+    queryset = Payment.objects.all()
+    serializer_class = CreatePaymentSerializer
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
 
 class UploadVendorsAsExcel(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
@@ -126,6 +133,7 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
         # Fetch additional vendor details from the Django model
         vendors = Vendor.objects.prefetch_related('pay_period', 'pay_type').in_bulk(field_name='id')
         vendor_details = {vendor.name: {
+            'vendor_id': vendor.vendor_id,
             'number': vendor.number,
             'penalized': vendor.penalized,
             'fully_refunded': vendor.fully_refunded,
@@ -133,15 +141,22 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
             'pay_type': PaymentMethodSerializer(vendor.pay_type).data.get('title', ''),
         } for vendor in vendors.values()}
 
-        # Prepare the final results, adding start_date, end_date, order count, and orders for each vendor
+        # Query the payments table for matching records
+        payments = Payment.objects.filter(
+            Q(date_from=start_date) & Q(date_to=end_date) & Q(is_paid=True)
+        ).values_list('vendor_id', flat=True)
+
+        # Prepare the final results, adding start_date, end_date, order count, orders, and is_paid for each vendor
         final_results = []
         for item in grouped_sum.itertuples(index=False):
             vendor_info = vendor_details.get(item.vendor, {})
+            is_paid = item.vendor in payments  # Check if the vendor is in the payments list
             result_item = {
                 **item._asdict(),
                 **vendor_info,
                 'start_date': start_date,
                 'end_date': end_date,
+                'is_paid': is_paid,
             }
             final_results.append(result_item)
 
