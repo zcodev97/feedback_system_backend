@@ -50,33 +50,6 @@ class CreatePaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = '__all__'
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['payment_cycle'] = instance.payment_cycle.title
-        representation['payment_method'] = instance.payment_method.title
-        return representation
-
-    def to_internal_value(self, data):
-        internal_value = super().to_internal_value(data)
-        payment_cycle_title = data.get('payment_cycle')
-        payment_method_title = data.get('payment_method')
-
-        if payment_cycle_title:
-            payment_cycle = PaymentCycle.objects.filter(title=payment_cycle_title).first()
-            if payment_cycle:
-                internal_value['payment_cycle'] = payment_cycle.id
-            else:
-                raise serializers.ValidationError({'payment_cycle': 'Payment cycle not found.'})
-
-        if payment_method_title:
-            payment_method = PaymentMethod.objects.filter(title=payment_method_title).first()
-            if payment_method:
-                internal_value['payment_method'] = payment_method.id
-            else:
-                raise serializers.ValidationError({'payment_method': 'Payment method not found.'})
-
-        return internal_value
-
 
 class PaidOrdersSerializer(serializers.ModelSerializer):
     class Meta:

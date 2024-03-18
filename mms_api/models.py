@@ -46,21 +46,22 @@ class Vendor(models.Model):
 class Payment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     vendor_id = models.IntegerField()
-    vendor_name = models.CharField(max_length=255)
+    vendor = models.CharField(max_length=255)
     date_from = models.DateTimeField()
     date_to = models.DateTimeField()
     payment_cycle = models.ForeignKey(PaymentCycle, on_delete=models.CASCADE)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.CASCADE)
-    number = models.IntegerField(blank=True)
-    amount = models.FloatField(max_length=255)
+    number = models.CharField(max_length=255,blank=True)
+    amount = models.CharField(max_length=255)
     is_paid = models.BooleanField()
+    orders_count = models.JSONField()
     orders = models.JSONField()
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.vendor_name
+        return self.vendor
 
 
 class PaidOrders(models.Model):

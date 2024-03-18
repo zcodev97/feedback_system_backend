@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from .models import (Vendor, Payment, PaymentCycle, PaymentMethod, PaidOrders)
 from .serializers import (VendorSerializer, PaymentSerializer, PaymentCycleSerializer
-                            ,CreatePaymentSerializer,
+, CreatePaymentSerializer,
                           PaidOrdersSerializer,
                           PaymentMethodSerializer)
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
@@ -21,6 +21,7 @@ import pandas as pd
 import pandas_gbq
 import numpy as np
 from django.db.models import Q
+from rest_framework.exceptions import ValidationError
 
 
 class PaymentMethodAPI(generics.ListCreateAPIView):
@@ -47,10 +48,27 @@ class PaymentAPI(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
 
 
+
 class CreatePaymentAPI(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
     serializer_class = CreatePaymentSerializer
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
+    def perform_create(self, serializer):
+        vendor_id = serializer.validated_data.get('vendor_id')
+        start_date = serializer.validated_data.get('date_from')
+        end_date = serializer.validated_data.get('date_to')
+
+        existing_payment = Payment.objects.filter(
+            vendor_id=vendor_id,
+            date_from=start_date,
+            date_to=end_date
+        ).first()
+
+        if existing_payment:
+            raise ValidationError('A payment with the same vendor, start date, and end date already exists.')
+
+        serializer.save()
 
 class UploadVendorsAsExcel(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
@@ -109,8 +127,7 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
         query = f"""
            SELECT * FROM `peak-brook-355811.food_prod_public.vendor_payment` 
            WHERE order_date BETWEEN '{start_date}' AND '{end_date}'
-           LIMIT 1000
-        """
+           """
         df = pandas_gbq.read_gbq(query, project_id='peak-brook-355811')
 
         # Replace NaN (null in DataFrame) with None for direct JSON serialization
@@ -118,22 +135,24 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
 
         # Calculate the count of orders for each vendor and aggregate order details
         df['order_details'] = df.apply(lambda row: row.to_dict(), axis=1)
-        orders_by_vendor = df.groupby('vendor')['order_details'].apply(list).reset_index(name='orders')
-        order_counts = df.groupby('vendor')['order_id'].count().reset_index(name='order_count')
+        orders_by_vendor = df.groupby('vendor_id')['order_details'].apply(list).reset_index(name='orders')
+        order_counts = df.groupby('vendor_id')['order_id'].count().reset_index(name='order_count')
 
         # Group and sum the `to_be_paid` column by vendor
-        grouped_sum = df.groupby('vendor', as_index=False)['to_be_paid'].sum()
+        grouped_sum = df.groupby('vendor_id', as_index=False)['to_be_paid'].sum()
 
         # Merge the sum DataFrame with the order counts DataFrame
-        grouped_sum = pd.merge(grouped_sum, order_counts, on='vendor')
+        grouped_sum = pd.merge(grouped_sum, order_counts, on='vendor_id')
 
         # Merge with the orders data
-        grouped_sum = pd.merge(grouped_sum, orders_by_vendor, on='vendor')
+        grouped_sum = pd.merge(grouped_sum, orders_by_vendor, on='vendor_id')
 
         # Fetch additional vendor details from the Django model
+        # Fetch additional vendor details from the Django model
         vendors = Vendor.objects.prefetch_related('pay_period', 'pay_type').in_bulk(field_name='id')
-        vendor_details = {vendor.name: {
+        vendor_details = {vendor.vendor_id: {
             'vendor_id': vendor.vendor_id,
+            'vendor': vendor.name,
             'number': vendor.number,
             'penalized': vendor.penalized,
             'fully_refunded': vendor.fully_refunded,
@@ -141,23 +160,37 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
             'pay_type': PaymentMethodSerializer(vendor.pay_type).data.get('title', ''),
         } for vendor in vendors.values()}
 
+
+
         # Query the payments table for matching records
-        payments = Payment.objects.filter(
+        paid_vendors = Payment.objects.filter(
             Q(date_from=start_date) & Q(date_to=end_date) & Q(is_paid=True)
         ).values_list('vendor_id', flat=True)
 
         # Prepare the final results, adding start_date, end_date, order count, orders, and is_paid for each vendor
         final_results = []
         for item in grouped_sum.itertuples(index=False):
-            vendor_info = vendor_details.get(item.vendor, {})
-            is_paid = item.vendor in payments  # Check if the vendor is in the payments list
-            result_item = {
-                **item._asdict(),
-                **vendor_info,
-                'start_date': start_date,
-                'end_date': end_date,
-                'is_paid': is_paid,
-            }
-            final_results.append(result_item)
+            vendor_info = vendor_details.get(str(item.vendor_id), {})
+            if item.vendor_id not in paid_vendors:  # Only include vendors that are not in the paid_vendors list
+                # Retrieve existing order IDs for this vendor and date range
+                existing_orders = Payment.objects.filter(
+                    vendor_id=item.vendor_id
+                ).values_list('orders', flat=True)
+                existing_order_ids = set([order['order_id'] for order_list in existing_orders for order in order_list])
 
-        return Response({"vendor_summary": final_results})
+
+                # Filter new orders to include only those not already in existing_order_ids
+                new_orders = [order for order in item.orders if order['order_id'] not in existing_order_ids]
+
+
+                result_item = {
+                    **item._asdict(),
+                    **vendor_info,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'is_paid': False,
+                    'orders': new_orders,  # Updated orders list
+                }
+                final_results.append(result_item)
+
+        return Response(final_results)
