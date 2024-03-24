@@ -4,7 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2c9eecc9-9829-419c-a229-ad459bc4d677" name="Changes" comment="first init" />
+    <list default="true" id="2c9eecc9-9829-419c-a229-ad459bc4d677" name="Changes" comment="first init">
+      <change beforePath="$PROJECT_DIR$/withdraw_documents/17082002630363768574727328663052.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/withdraw_documents/Computer_Basics_Questions_Only.docx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/withdraw_documents/Solve_IT_its_a_HOMEWORK.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/withdraw_documents/computer_basics_1_1.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/withdraw_documents/logo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/withdraw_documents/logo_o8deJa2.png" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
