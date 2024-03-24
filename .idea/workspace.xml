@@ -7,10 +7,6 @@
     <list default="true" id="2c9eecc9-9829-419c-a229-ad459bc4d677" name="Changes" comment="first init">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mms_api/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/mms_api/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mms_api/apiviews.py" beforeDir="false" afterPath="$PROJECT_DIR$/mms_api/apiviews.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mms_api/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/mms_api/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mms_api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/mms_api/serializers.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,15 +28,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "D:/baly finance system/baly_finance_system_backend/manage.py"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/baly finance system/baly_finance_system_backend/manage.py&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/core" />
