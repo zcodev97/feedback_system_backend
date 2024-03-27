@@ -48,27 +48,45 @@ class PaymentAPI(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
 
 
-
 class CreatePaymentAPI(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
     serializer_class = CreatePaymentSerializer
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
 
+    def create(self, request, *args, **kwargs):
+        if isinstance(request.data, list):
+            created_payments = []
+            for item in request.data:
+                serializer = self.get_serializer(data=item)
+                serializer.is_valid(raise_exception=True)
+                try:
+                    self.perform_create(serializer)
+
+                    created_payments.append(serializer.data)
+                except ValidationError as e:
+                    # If a ValidationError occurs, log the error and continue with the next item
+                    # print(f"Error creating payment: {e}")
+                    continue
+            return Response(created_payments, status=status.HTTP_201_CREATED)
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         vendor_id = serializer.validated_data.get('vendor_id')
-        start_date = serializer.validated_data.get('date_from')
-        end_date = serializer.validated_data.get('date_to')
+        start_date = serializer.validated_data.get('start_date')
+        end_date = serializer.validated_data.get('end_date')
 
         existing_payment = Payment.objects.filter(
             vendor_id=vendor_id,
-            date_from=start_date,
-            date_to=end_date
+            start_date=start_date,
+            end_date=end_date
         ).first()
 
         if existing_payment:
-            raise ValidationError('A payment with the same vendor, start date, and end date already exists.')
+            return
+            # raise ValidationError('A payment with the same vendor, start date, and end date already exists.')
 
         serializer.save()
+
 
 class UploadVendorsAsExcel(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
@@ -160,11 +178,9 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
             'pay_type': PaymentMethodSerializer(vendor.pay_type).data.get('title', ''),
         } for vendor in vendors.values()}
 
-
-
         # Query the payments table for matching records
         paid_vendors = Payment.objects.filter(
-            Q(date_from=start_date) & Q(date_to=end_date) & Q(is_paid=True)
+            Q(start_date=start_date) & Q(end_date=end_date) & Q(is_paid=True)
         ).values_list('vendor_id', flat=True)
 
         # Prepare the final results, adding start_date, end_date, order count, orders, and is_paid for each vendor
@@ -173,15 +189,13 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
             vendor_info = vendor_details.get(str(item.vendor_id), {})
             if item.vendor_id not in paid_vendors:  # Only include vendors that are not in the paid_vendors list
                 # Retrieve existing order IDs for this vendor and date range
-                existing_orders = Payment.objects.filter(
-                    vendor_id=item.vendor_id
-                ).values_list('orders', flat=True)
-                existing_order_ids = set([order['order_id'] for order_list in existing_orders for order in order_list])
-
+                # existing_orders = Payment.objects.filter(
+                #     vendor_id=item.vendor_id
+                # ).values_list('orders', flat=True)
+                # existing_order_ids = set([order['order_id'] for order_list in existing_orders for order in order_list])
 
                 # Filter new orders to include only those not already in existing_order_ids
-                new_orders = [order for order in item.orders if order['order_id'] not in existing_order_ids]
-
+                # new_orders = [order for order in item.orders if order['order_id'] not in existing_order_ids]
 
                 result_item = {
                     **item._asdict(),
@@ -189,7 +203,7 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
                     'start_date': start_date,
                     'end_date': end_date,
                     'is_paid': False,
-                    'orders': new_orders,  # Updated orders list
+                    # 'orders': new_orders,  # Updated orders list
                 }
                 final_results.append(result_item)
 

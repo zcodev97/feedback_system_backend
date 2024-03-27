@@ -37,12 +37,12 @@ class VendorSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    payment_cycle = PaymentCycleSerializer()
-    payment_method = PaymentMethodSerializer()
-
     class Meta:
         model = Payment
-        fields = '__all__'
+        fields = ['vendor_id', 'vendor', 'start_date', 'end_date'
+            , 'pay_period', 'pay_type', 'number', 'to_be_paid', 'is_paid', 'order_count'
+            , 'created_at', 'created_by'
+                  ]
 
 
 class CreatePaymentSerializer(serializers.ModelSerializer):
