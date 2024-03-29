@@ -46,6 +46,9 @@ class PaymentAPI(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.order_by('-created_at')
 
 
 class CreatePaymentAPI(generics.ListCreateAPIView):
@@ -59,6 +62,7 @@ class CreatePaymentAPI(generics.ListCreateAPIView):
             for item in request.data:
                 serializer = self.get_serializer(data=item)
                 serializer.is_valid(raise_exception=True)
+
                 try:
                     self.perform_create(serializer)
 
@@ -143,7 +147,7 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
         end_date = request.query_params.get('end_date')
 
         query = f"""
-           SELECT * FROM `peak-brook-355811.food_prod_public.vendor_payment` 
+           SELECT * FROM `peak-brook-355811.food_prod_public.vendor_payment`
            WHERE order_date BETWEEN '{start_date}' AND '{end_date}'
            """
         df = pandas_gbq.read_gbq(query, project_id='peak-brook-355811')
@@ -183,28 +187,38 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
             Q(start_date=start_date) & Q(end_date=end_date) & Q(is_paid=True)
         ).values_list('vendor_id', flat=True)
 
+
         # Prepare the final results, adding start_date, end_date, order count, orders, and is_paid for each vendor
         final_results = []
         for item in grouped_sum.itertuples(index=False):
             vendor_info = vendor_details.get(str(item.vendor_id), {})
             if item.vendor_id not in paid_vendors:  # Only include vendors that are not in the paid_vendors list
                 # Retrieve existing order IDs for this vendor and date range
-                # existing_orders = Payment.objects.filter(
-                #     vendor_id=item.vendor_id
-                # ).values_list('orders', flat=True)
+                existing_orders = Payment.objects.filter(
+                    vendor_id=item.vendor_id
+                ).values_list('orders', flat=True)
                 # existing_order_ids = set([order['order_id'] for order_list in existing_orders for order in order_list])
 
                 # Filter new orders to include only those not already in existing_order_ids
-                # new_orders = [order for order in item.orders if order['order_id'] not in existing_order_ids]
-
+                new_orders = [order['order_id'] for order in item.orders if order['order_id'] not in existing_orders]
+                new_orders = [
+                    {
+                        'order_id': order['order_id'],
+                        'order_date': order['order_date'],
+                        'subtotal': order['subtotal']
+                    }
+                    for order in item.orders if order['order_id'] not in existing_orders
+                ]
                 result_item = {
                     **item._asdict(),
                     **vendor_info,
                     'start_date': start_date,
                     'end_date': end_date,
                     'is_paid': False,
-                    # 'orders': new_orders,  # Updated orders list
+                    'orders': new_orders,  # Updated orders list
                 }
                 final_results.append(result_item)
 
         return Response(final_results)
+
+

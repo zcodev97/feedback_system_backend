@@ -39,9 +39,9 @@ class VendorSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['vendor_id', 'vendor', 'start_date', 'end_date'
+        fields = ['id', 'vendor_id', 'vendor', 'start_date', 'end_date'
             , 'pay_period', 'pay_type', 'number', 'to_be_paid', 'is_paid', 'order_count'
-            , 'created_at', 'created_by'
+            , 'created_at', 'created_by', 'orders'
                   ]
 
 
