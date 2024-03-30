@@ -46,6 +46,7 @@ class PaymentAPI(generics.ListCreateAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
     def get_queryset(self):
         queryset = super().get_queryset()
         return queryset.order_by('-created_at')
@@ -187,7 +188,6 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
             Q(start_date=start_date) & Q(end_date=end_date) & Q(is_paid=True)
         ).values_list('vendor_id', flat=True)
 
-
         # Prepare the final results, adding start_date, end_date, order count, orders, and is_paid for each vendor
         final_results = []
         for item in grouped_sum.itertuples(index=False):
@@ -197,7 +197,8 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
                 existing_orders = Payment.objects.filter(
                     vendor_id=item.vendor_id
                 ).values_list('orders', flat=True)
-                # existing_order_ids = set([order['order_id'] for order_list in existing_orders for order in order_list])
+                # existing_order_ids = set([order['order_id'] for order_list in existing_orders for order in
+                # order_list])
 
                 # Filter new orders to include only those not already in existing_order_ids
                 new_orders = [order['order_id'] for order in item.orders if order['order_id'] not in existing_orders]
@@ -220,5 +221,3 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
                 final_results.append(result_item)
 
         return Response(final_results)
-
-
