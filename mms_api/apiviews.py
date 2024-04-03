@@ -149,7 +149,7 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
 
         query = f"""
            SELECT * FROM `peak-brook-355811.food_prod_public.vendor_payment`
-           WHERE order_date BETWEEN '{start_date}' AND '{end_date}'
+           WHERE order_date BETWEEN '{start_date} 00:00:00' AND '{end_date} 23:59:00'
            """
         df = pandas_gbq.read_gbq(query, project_id='peak-brook-355811')
 
@@ -185,7 +185,7 @@ class VendorPaymentsSummaryAPI(generics.ListCreateAPIView):
 
         # Query the payments table for matching records
         paid_vendors = Payment.objects.filter(
-            Q(start_date=start_date) & Q(end_date=end_date) & Q(is_paid=True)
+            Q(start_date=start_date) & Q(end_date=end_date)
         ).values_list('vendor_id', flat=True)
 
         # Prepare the final results, adding start_date, end_date, order count, orders, and is_paid for each vendor

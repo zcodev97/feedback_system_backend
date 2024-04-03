@@ -33,8 +33,8 @@ class VendorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vendor
-        fields = ['vendor_id','name','pay_period','pay_type','number',
-                  'owner_name','owner_phone','fully_refunded','penalized']
+        fields = ['vendor_id', 'name', 'pay_period', 'pay_type', 'number',
+                  'owner_name', 'owner_phone', 'fully_refunded', 'penalized']
 
 
 class PaymentSerializer(serializers.ModelSerializer):
