@@ -1,58 +1,22 @@
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from django.conf import settings
-from .models import (Vendor, Payment, PaymentMethod, PaymentCycle, PaidOrders)
+from .models import (FeedBack)
 
 from core.serializers import CustomUserSerializer
 
 
-class VendorCustomSerializer(serializers.ModelSerializer):
-    total_to_be_paid = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    orders = serializers.JSONField(read_only=True)
+class FeedBackSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Vendor
-        fields = ['name', 'total_to_be_paid', 'orders']
-
-
-class PaymentMethodSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaymentMethod
+        model = FeedBack
         fields = '__all__'
 
 
-class PaymentCycleSerializer(serializers.ModelSerializer):
+class FeedBackCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PaymentCycle
-        fields = '__all__'
-
-
-class VendorSerializer(serializers.ModelSerializer):
-    pay_period = PaymentCycleSerializer(read_only=True)  # Assuming this is your payment_cycle serializer
-    pay_type = PaymentMethodSerializer(read_only=True)  # Assuming this is your payment_method serializer
-
-    class Meta:
-        model = Vendor
-        fields = ['vendor_id', 'name', 'pay_period', 'pay_type', 'number',
-                  'owner_name', 'owner_phone', 'fully_refunded', 'penalized']
-
-
-class PaymentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Payment
-        fields = ['id', 'vendor_id', 'vendor', 'start_date', 'end_date'
-            , 'pay_period', 'pay_type', 'number', 'to_be_paid', 'is_paid', 'order_count'
-            , 'created_at', 'created_by', 'orders'
+        model = FeedBack
+        fields = ['welcome',   'service_level',
+                  'price_level',  'food_level', 'clean_level',
+                  'client_name', 'notes'
                   ]
-
-
-class CreatePaymentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Payment
-        fields = '__all__'
-
-
-class PaidOrdersSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaidOrders
-        fields = '__all__'

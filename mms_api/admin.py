@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import (Vendor, Payment,
-                     PaymentCycle, PaidOrders, PaymentMethod)
+from .models import (FeedBack)
 from django.utils.html import format_html
 
 import datetime
@@ -8,20 +7,21 @@ import pandas as pd
 import pandas_gbq
 
 
-@admin.register(Vendor)
-class VendorAdmin(admin.ModelAdmin):
+@admin.register(FeedBack)
+class FeedbackAdmin(admin.ModelAdmin):
     list_per_page = 5  # Items per page
     ordering = ('-created_at',)  # Default ordering
-    search_fields = ['1693']  # Fields to search by
-    list_display = [ 'vendor_id','name','number']
+    list_display = [
+        field.name for field in FeedBack._meta.get_fields() if field.name != 'id']
 
 
-@admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
-    list_per_page = 5  # Items per page
-    ordering = ('-created_at',)  # Default ordering
-    search_fields = ['vendor_id']  # Fields to search by
-    list_display = [field.name for field in Payment._meta.get_fields() if field.name != 'id' and field.name != 'orders']
+# @admin.register(Payment)
+# class PaymentAdmin(admin.ModelAdmin):
+#     list_per_page = 5  # Items per page
+#     ordering = ('-created_at',)  # Default ordering
+#     search_fields = ['vendor_id']  # Fields to search by
+#     list_display = [field.name for field in Payment._meta.get_fields(
+#     ) if field.name != 'id' and field.name != 'orders']
 
     # def save_model(self, request, obj, form, change):
     #     # Execute SQL query and load data into DataFrame
@@ -52,18 +52,18 @@ class PaymentAdmin(admin.ModelAdmin):
     #     super().save_model(request, obj, form, change)
 
 
-@admin.register(PaymentCycle)
-class PaymentCycleAdmin(admin.ModelAdmin):
-    # list_per_page = 5  # Items per page
-    # search_fields = ['title']  # Fields to search by
-    list_display = ['title']
+# @admin.register(PaymentCycle)
+# class PaymentCycleAdmin(admin.ModelAdmin):
+#     # list_per_page = 5  # Items per page
+#     # search_fields = ['title']  # Fields to search by
+#     list_display = ['title']
 
 
-@admin.register(PaymentMethod)
-class PaymentMethodAdmin(admin.ModelAdmin):
-    list_per_page = 5  # Items per page
-    search_fields = ['title']  # Fields to search by
-    list_display = ['title']
+# @admin.register(PaymentMethod)
+# class PaymentMethodAdmin(admin.ModelAdmin):
+#     list_per_page = 5  # Items per page
+#     search_fields = ['title']  # Fields to search by
+#     list_display = ['title']
 
 
 # @admin.register(PaidOrders)
@@ -83,14 +83,14 @@ class PaymentMethodAdmin(admin.ModelAdmin):
 #     list_display = [field.name for field in PaidOrders._meta.get_fields() if field.name != 'id']
 
 
-@admin.register(PaidOrders)
-class PaidOrdersAdmin(admin.ModelAdmin):
-    list_per_page = 25  # Items per page
-    ordering = ('-created_at',)  # Default ordering
-    search_fields = ['payment_id']  # Fields to search by
-    list_display = [field.name for field in PaidOrders._meta.get_fields() if field.name != 'id']
+# @admin.register(PaidOrders)
+# class PaidOrdersAdmin(admin.ModelAdmin):
+#     list_per_page = 25  # Items per page
+#     ordering = ('-created_at',)  # Default ordering
+#     search_fields = ['payment_id']  # Fields to search by
+#     list_display = [field.name for field in PaidOrders._meta.get_fields() if field.name != 'id']
 
-    def formatted_price_dinar(self, obj):
-        return format_html(f"IQD {obj.amount:,.0f}")
+#     def formatted_price_dinar(self, obj):
+#         return format_html(f"IQD {obj.amount:,.0f}")
 
-    formatted_price_dinar.short_description = 'Amount'  # Sets the column header
+#     formatted_price_dinar.short_description = 'Amount'  # Sets the column header
