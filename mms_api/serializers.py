@@ -18,5 +18,4 @@ class FeedBackCreateSerializer(serializers.ModelSerializer):
         model = FeedBack
         fields = ['welcome',   'service_level',
                   'price_level',  'food_level', 'clean_level',
-                  'client_name', 'notes'
-                  ]
+                  'client_name', 'notes', 'client_number']

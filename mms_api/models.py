@@ -19,6 +19,8 @@ class FeedBack(models.Model):
     clean_level = models.CharField(max_length=255)
     # clean_level_notes = models.TextField()
     client_name = models.CharField(max_length=255, blank=True)
+    client_number = models.CharField(max_length=255, blank=True)
+
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now=True)
 
